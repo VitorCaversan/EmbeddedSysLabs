@@ -1,0 +1,24 @@
+#— Keil uVision user-options (local, machine-specific)
+*.uvoptx
+
+#— Build output folders
+Objects/
+Listings/
+Output/
+Dependencies/
+
+#— Build artifacts
+*.axf        # ARM ELF image (keil output)
+*.elf        # sometimes used instead of .axf
+*.bin        # binary image
+*.hex        # hex image
+*.map        # linker map
+*.lst        # linker/assembly listing
+*.o          # object file
+*.obj        # object file (alternate)
+*.d          # dependency file
+
+#— Debug / toolchain files
+*.cof        # Code Object File (for debugger)
+*.bak        # backup files
+*.log        # build logs
