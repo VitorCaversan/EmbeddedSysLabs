@@ -59,19 +59,19 @@ void UARTIntHandler(void) {
     rxbuffer[1] = rxbuffer[2];
     rxbuffer[2] = last;
 
-    if ((rxbuffer[1] >= '1') && (rxbuffer[1] <= '4'))
+    if ((rxbuffer[2] >= '1') && (rxbuffer[2] <= '4'))
     {
-        blinkTime = (rxbuffer[1] - '0') * 1000;
+        blinkTime = (rxbuffer[2] - '0') * 1000;
         SysTicks1ms = 0;
         GPIOPinWrite(LED_PORTN, LED_PIN_1 | LED_PIN_0, LED_PIN_1 | LED_PIN_0);
         GPIOPinWrite(LED_PORTF, LED_PIN_4, LED_PIN_4);
     }
-    else if (rxbuffer[1] == '5')
+    else if (rxbuffer[2] == '5')
     {
         UARTSendString("Botao 5: ");
         UARTSendString(GPIOPinRead(BTNS_PORTJ, BTN_PIN_0) ? "NAO PRESSIONADO\r\n" : "PRESSIONADO\r\n");
     }
-    else if (rxbuffer[1] == '6')
+    else if (rxbuffer[2] == '6')
     {
         UARTSendString("Botao 6: ");
         UARTSendString(GPIOPinRead(BTNS_PORTJ, BTN_PIN_1) ? "NAO PRESSIONADO\r\n" : "PRESSIONADO\r\n");
