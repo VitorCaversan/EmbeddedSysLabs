@@ -389,6 +389,21 @@
               <FileType>1</FileType>
               <FilePath>.\main.c</FilePath>
             </File>
+            <File>
+              <FileName>buttons.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\Buttons\buttons.c</FilePath>
+            </File>
+            <File>
+              <FileName>global.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\Global\global.c</FilePath>
+            </File>
+            <File>
+              <FileName>sysTick.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\SysTick\sysTick.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
