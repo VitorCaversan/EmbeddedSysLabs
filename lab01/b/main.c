@@ -15,6 +15,7 @@
 
 #include "src/Buttons/buttons.h"
 #include "src/SysTick/sysTick.h"
+#include "src/Uart/uart.h"
 
 #define LED_PORTN GPIO_PORTN_BASE
 #define LED_PORTF GPIO_PORTF_BASE
@@ -43,6 +44,7 @@ int main(void)
     sysTick_setupSysTick();
     ConfigLEDs();
     btns_configBtns();
+    uart_setupUart();
     
     btns_configInterrupts();
 

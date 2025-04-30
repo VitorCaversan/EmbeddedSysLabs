@@ -8,6 +8,7 @@
 #include "./buttons.h"
 #include "../Global/global.h"
 #include "../SysTick/sysTick.h"
+#include "../Uart/uart.h"
 
 #define BTNS_PORTJ GPIO_PORTJ_BASE
 #define BTN_PIN_0 GPIO_PIN_0
@@ -75,6 +76,10 @@ static void portJIntHandler(void)
         g_setBtnPressed(false);
 
         g_setTimeBtwnBtnPresses(sysTick_getTimeInMs() - g_getPrevBtnSysTick());
+
+        const unsigned long timeBtwnBtnPresses = g_getTimeBtwnBtnPresses();
+        uart_sendArray((const char *)&timeBtwnBtnPresses, sizeof(timeBtwnBtnPresses));
+        uart_sendString("\r\n");
     }
     else
     {

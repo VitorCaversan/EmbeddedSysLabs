@@ -16,6 +16,10 @@ extern void sysTick_setClkFreq()
 {
     SysClock = SysCtlClockFreqSet((SYSCTL_XTAL_25MHZ | SYSCTL_OSC_MAIN | SYSCTL_USE_PLL | SYSCTL_CFG_VCO_240), CLK_FREQ);
 }
+extern unsigned long sysTick_getClkFreq(void)
+{
+    return SysClock;
+}
 
 extern void sysTick_setupSysTick(void)
 {

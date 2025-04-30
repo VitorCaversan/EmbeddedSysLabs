@@ -17,9 +17,10 @@
 #include "driverlib/gpio.h"
 
 /**
- * @brief Sets the clock frequency
+ * @brief Sets and gets the clock frequency
  */
 extern void sysTick_setClkFreq();
+extern unsigned long sysTick_getClkFreq(void);
 
 /**
  * @brief Configures sysTick interrupts
