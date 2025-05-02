@@ -66,6 +66,11 @@ static void portJIntHandler(void)
     {
         btn1DebounceInMs = sysTick_getTimeInMs();
         g_setBtnPressed(true);
+
+        // Liga LEDs 1 e 2, Apaga LEDs 3 e 4
+        GPIOPinWrite(LED_PORTN, LED_PIN_1 | LED_PIN_0, LED_PIN_1 | LED_PIN_0);
+        GPIOPinWrite(LED_PORTF, LED_PIN_4, 0);
+
         g_setPrevBtnSysTick(sysTick_getTimeInMs());
     }
     else if (((intStatus & BTN_PIN_1) != 0) &&
@@ -76,6 +81,11 @@ static void portJIntHandler(void)
         g_setBtnPressed(false);
 
         g_setTimeBtwnBtnPresses(sysTick_getTimeInMs() - g_getPrevBtnSysTick());
+
+        // Liga LEDs 3 e 4, Apaga LEDs 1 e 2
+        GPIOPinWrite(LED_PORTN, LED_PIN_1 | LED_PIN_0, LED_PIN_1 | LED_PIN_0);
+        GPIOPinWrite(LED_PORTF, LED_PIN_4, 0);
+
 
         const unsigned long timeBtwnBtnPresses = g_getTimeBtwnBtnPresses();
         uart_sendArray((const char *)&timeBtwnBtnPresses, sizeof(timeBtwnBtnPresses));

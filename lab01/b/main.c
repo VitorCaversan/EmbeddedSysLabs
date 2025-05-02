@@ -48,6 +48,10 @@ int main(void)
     
     btns_configInterrupts();
 
+    // liga todos os LEDs
+    GPIOPinWrite(LED_PORTN, LED_PIN_1 | LED_PIN_0, LED_PIN_1 | LED_PIN_0);
+    GPIOPinWrite(LED_PORTF, LED_PIN_4, LED_PIN_4);
+
     while (1)
     {
         __asm(" WFI"); // espera por interrupcao, modo low power
