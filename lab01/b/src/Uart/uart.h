@@ -8,6 +8,7 @@
 #ifndef _UART_H_
 #define _UART_H_
 
+#include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include "inc/hw_memmap.h"
@@ -39,5 +40,12 @@ extern void uart_sendString(const char *str);
  * @param size The amount of characters to be sent
  */
 extern void uart_sendArray(const char *str, unsigned long size);
+
+/**
+ * @brief Sends a value in decimal format through the UART0 peripheral.
+ * 
+ * @param val The value to be sent
+ */
+extern void uart_sendValInDecimal(unsigned long val);
 
 #endif // _UART_H_

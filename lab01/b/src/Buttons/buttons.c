@@ -9,6 +9,7 @@
 #include "../Global/global.h"
 #include "../SysTick/sysTick.h"
 #include "../Uart/uart.h"
+#include "../Leds/leds.h"
 
 #define BTNS_PORTJ GPIO_PORTJ_BASE
 #define BTN_PIN_0 GPIO_PIN_0
@@ -67,9 +68,10 @@ static void portJIntHandler(void)
         btn1DebounceInMs = sysTick_getTimeInMs();
         g_setBtnPressed(true);
 
-        // Liga LEDs 1 e 2, Apaga LEDs 3 e 4
-        GPIOPinWrite(LED_PORTN, LED_PIN_1 | LED_PIN_0, LED_PIN_1 | LED_PIN_0);
-        GPIOPinWrite(LED_PORTF, LED_PIN_4, 0);
+        leds_turnOnLed(LED_0);
+        leds_turnOnLed(LED_1);
+        leds_turnOffLed(LED_2);
+        leds_turnOffLed(LED_3);
 
         g_setPrevBtnSysTick(sysTick_getTimeInMs());
     }
@@ -82,13 +84,14 @@ static void portJIntHandler(void)
 
         g_setTimeBtwnBtnPresses(sysTick_getTimeInMs() - g_getPrevBtnSysTick());
 
-        // Liga LEDs 3 e 4, Apaga LEDs 1 e 2
-        GPIOPinWrite(LED_PORTN, LED_PIN_1 | LED_PIN_0, LED_PIN_1 | LED_PIN_0);
-        GPIOPinWrite(LED_PORTF, LED_PIN_4, 0);
-
+        leds_turnOnLed(LED_2);
+        leds_turnOnLed(LED_3);
+        leds_turnOffLed(LED_0);
+        leds_turnOffLed(LED_1);
 
         const unsigned long timeBtwnBtnPresses = g_getTimeBtwnBtnPresses();
-        uart_sendArray((const char *)&timeBtwnBtnPresses, sizeof(timeBtwnBtnPresses));
+        // uart_sendArray((const char *)&timeBtwnBtnPresses, sizeof(timeBtwnBtnPresses));
+        uart_sendValInDecimal(timeBtwnBtnPresses);
         uart_sendString("\r\n");
     }
     else

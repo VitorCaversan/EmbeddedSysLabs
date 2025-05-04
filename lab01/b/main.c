@@ -16,41 +16,26 @@
 #include "src/Buttons/buttons.h"
 #include "src/SysTick/sysTick.h"
 #include "src/Uart/uart.h"
-
-#define LED_PORTN GPIO_PORTN_BASE
-#define LED_PORTF GPIO_PORTF_BASE
-#define LED_PIN_1 GPIO_PIN_1
-#define LED_PIN_0 GPIO_PIN_0
-#define LED_PIN_4 GPIO_PIN_4
+#include "src/Leds/leds.h"
 
 static unsigned char rxbuffer[3] = {0};
 static volatile int blinkTime = 0;
-
-void ConfigLEDs(void);
-
-
-void ConfigLEDs(void)
-{
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPION);
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
-    GPIOPinTypeGPIOOutput(LED_PORTN, LED_PIN_1 | LED_PIN_0);
-    GPIOPinTypeGPIOOutput(LED_PORTF, LED_PIN_4);
-}
 
 int main(void)
 {
     sysTick_setClkFreq();
     
     sysTick_setupSysTick();
-    ConfigLEDs();
+    leds_configLeds();
     btns_configBtns();
     uart_setupUart();
     
     btns_configInterrupts();
 
-    // liga todos os LEDs
-    GPIOPinWrite(LED_PORTN, LED_PIN_1 | LED_PIN_0, LED_PIN_1 | LED_PIN_0);
-    GPIOPinWrite(LED_PORTF, LED_PIN_4, LED_PIN_4);
+    leds_turnOnLed(LED_0);
+    leds_turnOnLed(LED_1);
+    leds_turnOnLed(LED_2);
+    leds_turnOnLed(LED_3);
 
     while (1)
     {

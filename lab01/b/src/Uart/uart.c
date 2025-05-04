@@ -41,6 +41,22 @@ extern void uart_sendArray(const char *str, unsigned long size)
     }
 }
 
+extern void uart_sendValInDecimal(unsigned long val)
+{
+    // Max unsigned long on a 32-bit Tiva is 10 digits, +1 for '\0'
+    char          buf[11] = {0};
+    unsigned char len     = 0;
+
+    len = sprintf(buf, "%lu", val);
+
+    for (unsigned char itr = 0; itr < len; itr++)
+    {
+        UARTCharPut(UART0_BASE, buf[itr]);
+    }
+
+    return;
+}
+
 //--------------------------------------------------
 
 static void uartIntHandler(void)
