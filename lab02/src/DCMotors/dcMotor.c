@@ -44,8 +44,8 @@ extern void setDutyCycle(uint32_t pwmPercent) {
     uint32_t maxPeriod = PWMGenPeriodGet(PWM0_BASE, PWM_GEN_2);
     uint32_t increment = maxPeriod / 100; // Increment based on PWM period - 1000 = 10 s  100 = 1s
 
-    if (increment < 0) increment = 0;
-    else if (increment > 100) increment = 100;
+    if (pwmPercent < 0) pwmPercent = 0;
+    else if (pwmPercent > 100) pwmPercent = 100;
 
     g_ui32PWMDutyCycle = increment * pwmPercent;
 
