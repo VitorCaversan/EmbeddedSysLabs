@@ -25,6 +25,8 @@ int main(void)
     sysTick_setupSysTick();
     leds_configLeds();
     uart_setupUart();
+    tempSens_configTempSens();
+    dcMotor_configDCMotors();
     
     leds_turnOffLed(LED_0);
     leds_turnOffLed(LED_1);

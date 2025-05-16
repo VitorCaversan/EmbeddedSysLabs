@@ -14,6 +14,9 @@
 #include "driverlib/sysctl.h"
 #include "driverlib/gpio.h"
 #include "driverlib/pin_map.h"
+#include "driverlib/adc.h"
+#include "driverlib/interrupt.h"
+
 
 /**
  * @brief Configures the temperature sensor on the board.
@@ -22,6 +25,22 @@
  * necessary GPIO pins and ADC configurations to enable reading the temperature sensor.
  */
 extern void tempSens_configTempSens(void);
+
+/**
+ * @brief Configures the ADC on the board.
+ * 
+ * The temperature sensor is read from the ADC0 channel 0. The function sets up the
+ * necessary GPIO pins and ADC configurations to enable reading the temperature sensor.
+ */
+extern void SetupADC(void);
+
+/**
+ * @brief Returns the ADC value read on the Temperature Sensor.
+ * 
+ * The temperature sensor is read from the ADC0 channel 0. The function returns the 
+ * reading from the temperature sensor.
+ */
+extern uint32_t getTempSensRead(void);
 
 
 #endif // _TEMP_SENS_H_
