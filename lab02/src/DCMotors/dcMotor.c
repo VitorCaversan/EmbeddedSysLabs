@@ -30,8 +30,7 @@ extern void dcMotor_configDCMotors(void)
 
 extern void dcMotor_setDutyCycle(uint32_t pwmPercent)
 {
-
-    uint32_t maxPeriod = PWMGenPeriodGet(PWM0_BASE, PWM_GEN_2);
+    uint32_t maxPeriod = PWMGenPeriodGet(PWM0_BASE, PWM_GEN_1);
     uint32_t increment = maxPeriod / 100; // Increment based on PWM period - 1000 = 10 s  100 = 1s
 
     if (pwmPercent < 0) pwmPercent = 0;
@@ -39,14 +38,14 @@ extern void dcMotor_setDutyCycle(uint32_t pwmPercent)
 
     g_ui32PWMDutyCycle = increment * pwmPercent;
 
-    PWMPulseWidthSet(PWM0_BASE, PWM_OUT_5, g_ui32PWMDutyCycle);
+    PWMPulseWidthSet(PWM0_BASE, PWM_OUT_2, g_ui32PWMDutyCycle);
 
     return;
 }
 
 extern void deMotor_incrementDutyCycle(uint32_t increments, bool fadeUp)
 {
-    uint32_t maxPeriod = PWMGenPeriodGet(PWM0_BASE, PWM_GEN_2);	  
+    uint32_t maxPeriod = PWMGenPeriodGet(PWM0_BASE, PWM_GEN_1);	  
 	uint32_t increment = maxPeriod / 100;  // Increment based on PWM period - 1000 = 10 s  100 = 1s
     g_bFadeUp = fadeUp;
 
@@ -72,7 +71,7 @@ extern void deMotor_incrementDutyCycle(uint32_t increments, bool fadeUp)
         }
     }
 
-    PWMPulseWidthSet(PWM0_BASE, PWM_OUT_5, g_ui32PWMDutyCycle);
+    PWMPulseWidthSet(PWM0_BASE, PWM_OUT_2, g_ui32PWMDutyCycle);
 
     return;
 }
@@ -90,6 +89,13 @@ extern void dcMotor_TurnOnMotor(DCMotorDir dir)
         default:
             break;
     }
+
+    return;
+}
+
+extern void dcMotor_TurnOffMotor(void)
+{
+    GPIOPinWrite(GPIO_PORTE_BASE, GPIO_PIN_0 | GPIO_PIN_1, 0);
 
     return;
 }

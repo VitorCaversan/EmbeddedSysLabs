@@ -31,19 +31,19 @@ extern void leds_turnOnLed(LedId ledId)
     {
         case LED_0:
             ledPort = LED_PORTN;
-            ledPin  = LED_0_PIN;
+            ledPin  = LED_1_PIN;
             break;
         case LED_1:
             ledPort = LED_PORTN;
-            ledPin  = LED_1_PIN;
+            ledPin  = LED_0_PIN;
             break;
         case LED_2:
             ledPort = LED_PORTF;
-            ledPin  = LED_2_PIN;
+            ledPin  = LED_3_PIN;
             break;
         case LED_3:
             ledPort = LED_PORTF;
-            ledPin  = LED_3_PIN;
+            ledPin  = LED_2_PIN;
             break;
         default:
             break;
@@ -63,19 +63,19 @@ extern void leds_turnOffLed(LedId ledId)
     {
         case LED_0:
             ledPort = LED_PORTN;
-            ledPin  = LED_0_PIN;
+            ledPin  = LED_1_PIN;
             break;
         case LED_1:
             ledPort = LED_PORTN;
-            ledPin  = LED_1_PIN;
+            ledPin  = LED_0_PIN;
             break;
         case LED_2:
             ledPort = LED_PORTF;
-            ledPin  = LED_2_PIN;
+            ledPin  = LED_3_PIN;
             break;
         case LED_3:
             ledPort = LED_PORTF;
-            ledPin  = LED_3_PIN;
+            ledPin  = LED_2_PIN;
             break;
         default:
             break;

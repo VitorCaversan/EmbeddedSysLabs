@@ -58,4 +58,9 @@ extern void deMotor_incrementDutyCycle(uint32_t increments, bool fadeUp);
  */
 extern void dcMotor_TurnOnMotor(DCMotorDir dir);
 
+/**
+ * @brief Turns the DC motor off
+ */
+extern void dcMotor_TurnOffMotor(void);
+
 #endif // _DC_MOTOR_H_

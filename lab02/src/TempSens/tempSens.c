@@ -4,6 +4,8 @@
 
 #define ADC_SEQUENCER 3 //Using sequencer 3 of the ADC for single sampling
 
+#define MAX_TEMP_IN_CELSIUS 85 // Maximum temperature in Celsius
+
 //--------------------------------------------------
 
 /**
@@ -20,18 +22,21 @@ extern uint32_t tempSens_getTempSensRead(void)
 {
 
     uint32_t adcValue;
+    unsigned long tempInCelsius;
 
     ADCProcessorTrigger(ADC0_BASE, ADC_SEQUENCER); // Starts the conversion process
     while(!ADCIntStatus(ADC0_BASE, ADC_SEQUENCER, false)); // Wait for the conversion end
     ADCIntClear(ADC0_BASE, ADC_SEQUENCER); // clears ADC interrupt
     ADCSequenceDataGet(ADC0_BASE, ADC_SEQUENCER, &adcValue); // Get read value
 
-    return adcValue;
+    tempInCelsius = (adcValue * MAX_TEMP_IN_CELSIUS) / 4096;
+
+    return tempInCelsius;
 }
 
 extern void tempSens_configTempSens(void)
 {
-    SetupADC();  
+    SetupADC();
     
     return;
 }
