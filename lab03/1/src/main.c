@@ -1,46 +1,63 @@
+#include <stdint.h>
+#include <stdbool.h>
+#include <stdio.h>
 #include "system_TM4C1294.h"   // CMSIS-Core
-#include "driverleds.h"        // device drivers
 #include "cmsis_os2.h"         // CMSIS-RTOS
+#include "inc/hw_memmap.h"
+#include "driverlib/sysctl.h"
+#include "driverlib/gpio.h"
+#include "driverlib/pin_map.h"
+#include "driverlib/systick.h"
+#include "driverlib/interrupt.h"
 
-osThreadId_t thread1_id, thread2_id;
+#include "src/SysTick/sysTick.h"
+#include "src/Leds/leds.h"
+
+osThreadId_t thread1_id, thread2_id, thread3_id;
 
 void thread1 (void *arg)
 {
-    uint8_t state = 0;
-
     while (1) {
-        state ^= LED1;
-        LEDWrite(LED1, state);
-        osDelay(100);
+        leds_turnOnLed(LED_0)
+        osDelay(1000)
+        leds_turnOffLed(LED_0)
+        osDelay(1000)
     } // while
 } // thread1
 
 void thread2 (void *arg)
 {
-    uint8_t state = 0;
-    uint32_t tick;
-
     while (1) {
-        tick = osKernelGetTickCount();
-
-        state ^= LED2;
-        LEDWrite(LED2, state);
-
-        osDelayUntil(tick + 100);
+        leds_turnOnLed(LED_1)
+        osDelay(250)
+        leds_turnOffLed(LED_1)
+        osDelay(250)
     } // while
 } // thread2
 
+void thread3 (void *arg)
+{
+    while (1) {
+        leds_turnOnLed(LED_2)
+        osDelay(250)
+        leds_turnOffLed(LED_2)
+        osDelay(250)
+    } // while
+} // thread3
+
 void main (void)
 {
-    LEDInit(LED2 | LED1);
-
     osKernelInitialize();
 
     thread1_id = osThreadNew(thread1, NULL, NULL);
     thread2_id = osThreadNew(thread2, NULL, NULL);
+    thread3_id = osThreadNew(thread3, NULL, NULL);
 
-    if (osKernelGetState() == osKernelReady)
-        osKernelStart();
+    //sysTick_setClkFreq();
+    //sysTick_setupSysTick();
+    leds_configLeds();
+
+    osKernelStart();
 
     while (1);
 } // main
