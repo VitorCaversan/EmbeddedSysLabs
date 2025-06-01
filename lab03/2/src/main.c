@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <math.h>
 #include "system_TM4C1294.h"   // CMSIS-Core
 #include "cmsis_os2.h"         // CMSIS-RTOS
 #include "inc/hw_memmap.h"
@@ -16,43 +17,50 @@
 #include "src/Leds/leds.h"
 #include "src/TempSens/tempSens.h"
 
-#define PERIOD_TO_SEND_INFO 500 // 0.5 second
+#define PERIOD_TO_SEND_INFO 1000 // 1 second
+#define PERIOD_TO_GET_INFO 500 // 0.5 second
 
 osThreadId_t thread1_id, thread2_id, thread3_id;
-static unsigned long g_TimeSinceLastUpdate = 0;
-unsigned long tempSensValues[10];
+static unsigned long g_TimeSinceLastSend = 0;
+static unsigned long g_TimeSinceLastGet = 0;
+unsigned long tempSensValues[10] = { 0 };
 float mean = 0;
 float stdDev = 0;
 
-
+//Still needs to implement Semaphores or Mutexes to treat
+//racing conditions on the Threads
 
 void thread1 (void *arg)
 {
     uint32_t i = 0;
     while (1) {
-        if(i > 9) i = 0;
-        tempSensValues[i] = tempSens_getTempSensRead(); //(Usar Mutex/Semaforo?)
-        i++;
-        osDelay(500)
+        if (sysTick_getTimeInMs() - g_TimeSinceLastGet >= PERIOD_TO_GET_INFO)
+        {
+            g_TimeSinceLastUpdate = sysTick_getTimeInMs();
+            if(i > 9) i = 0;
+            tempSensValues[i] = tempSens_getTempSensRead();
+            i++;
+        }    
     } // while
 } // thread1
 
 void thread2 (void *arg)
 {
     while (1) {
-        //calculo da média/desvio padrão das ultimas 10 leituras (Usar Mutex/Semaforo?)
+        for(int i = 0; i < 10; i++) mean += (tempSensValues[i]/10);
+        for(int i = 0; i < 10; i++) stdDev += (pow((tempSensValues[i] - mean),2))/10
     } // while
 } // thread2
 
 void thread3 (void *arg)
 {
     while (1) {
-        if (sysTick_getTimeInMs() - g_TimeSinceLastUpdate >= PERIOD_TO_SEND_INFO)
+        if (sysTick_getTimeInMs() - g_TimeSinceLastSend >= PERIOD_TO_SEND_INFO)
         {
             g_TimeSinceLastUpdate = sysTick_getTimeInMs();
-            uart_sendValInDecimal(mean);   //(Usar Mutex/Semaforo?)
+            uart_sendValInDecimal(mean);
             uart_sendString(",");
-            uart_sendValInDecimal(stdDev); //(Usar Mutex/Semaforo?)
+            uart_sendValInDecimal(stdDev); 
             uart_sendString("\r\n");
         }
     } // while
