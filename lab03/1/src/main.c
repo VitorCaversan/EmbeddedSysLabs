@@ -18,30 +18,30 @@ osThreadId_t thread1_id, thread2_id, thread3_id;
 void thread1 (void *arg)
 {
     while (1) {
-        leds_turnOnLed(LED_0)
-        osDelay(1000)
-        leds_turnOffLed(LED_0)
-        osDelay(1000)
+        leds_turnOnLed(LED_0);
+        osDelay(1000);
+        leds_turnOffLed(LED_0);
+        osDelay(1000);
     } // while
 } // thread1
 
 void thread2 (void *arg)
 {
     while (1) {
-        leds_turnOnLed(LED_1)
-        osDelay(250)
-        leds_turnOffLed(LED_1)
-        osDelay(250)
+        leds_turnOnLed(LED_1);
+        osDelay(250);
+        leds_turnOffLed(LED_1);
+        osDelay(250);
     } // while
 } // thread2
 
 void thread3 (void *arg)
 {
     while (1) {
-        leds_turnOnLed(LED_2)
-        osDelay(250)
-        leds_turnOffLed(LED_2)
-        osDelay(250)
+        leds_turnOnLed(LED_2);
+        osDelay(250);
+        leds_turnOffLed(LED_2);
+        osDelay(250);
     } // while
 } // thread3
 
