@@ -1,7 +1,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdio.h>
-#include "system_TM4C1294.h"   // CMSIS-Core
+// #include "system_TM4C1294.h"   // CMSIS-Core
 #include "cmsis_os2.h"         // CMSIS-RTOS
 #include "inc/hw_memmap.h"
 #include "driverlib/sysctl.h"
@@ -10,8 +10,8 @@
 #include "driverlib/systick.h"
 #include "driverlib/interrupt.h"
 
-#include "src/SysTick/sysTick.h"
-#include "src/Leds/leds.h"
+#include "SysTick/sysTick.h"
+#include "Leds/leds.h"
 
 osThreadId_t thread1_id, thread2_id, thread3_id;
 
@@ -45,7 +45,7 @@ void thread3 (void *arg)
     } // while
 } // thread3
 
-void main (void)
+int main (void)
 {
     osKernelInitialize();
 
