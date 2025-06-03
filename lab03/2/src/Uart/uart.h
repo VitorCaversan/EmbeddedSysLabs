@@ -18,6 +18,7 @@
 #include "driverlib/pin_map.h"
 #include "driverlib/interrupt.h"
 #include "driverlib/systick.h"
+#include "../SysTick/sysTick.h"
 
 /**
  * @brief Sets up the UART0 peripheral and its interrupts.

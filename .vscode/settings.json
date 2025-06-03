@@ -1,3 +1,6 @@
 {
-    "C_Cpp.default.compilerPath": "c:\\Keil_v5\\ARM\\ARMCLANG\\bin\\armclang.exe"
+    "C_Cpp.default.compilerPath": "c:\\Keil_v5\\ARM\\ARMCLANG\\bin\\armclang.exe",
+    "files.associations": {
+        "uart.h": "c"
+    }
 }
