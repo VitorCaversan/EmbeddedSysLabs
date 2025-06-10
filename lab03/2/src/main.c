@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-// #include "system_TM4C1294.h"   // CMSIS-Core
+
 #include "cmsis_os2.h"         // CMSIS-RTOS
 #include "inc/hw_memmap.h"
 #include "driverlib/sysctl.h"
@@ -20,7 +20,7 @@
 #define PERIOD_TO_SEND_INFO 10000 // 1 second
 #define PERIOD_TO_GET_INFO 500 // 0.5 second
 
-osThreadId_t thread1_id, thread2_id, thread3_id;
+osThreadId_t getTempSensTaks_id, calcMetricsTask_id, sendUartDataTask_id;
 
 unsigned long tempSensValues[10] = { 0 };
 float mean = 0;
@@ -29,7 +29,7 @@ float stdDev = 0;
 static osMutexId_t tempMutex_id;
 
 
-void thread1 (void *arg)
+void getTempSensTaks (void *arg)
 {
     uint32_t i = 0;
     while (1) {
@@ -37,17 +37,17 @@ void thread1 (void *arg)
         if (stat == osOK)
         {
             tempSensValues[i] = tempSens_getTempSensRead();
+            i = ((i + 1) % 10);
 
             osMutexRelease(tempMutex_id);
         }
         
-        i = ((i + 1) % 10);
 
         osDelay(PERIOD_TO_GET_INFO);
     } // while
-} // thread1
+} // getTempSensTaks
 
-void thread2 (void *arg)
+void calcMetricsTask (void *arg)
 {
     while (1) {
         osStatus_t stat = osMutexAcquire(tempMutex_id, osWaitForever);
@@ -64,9 +64,9 @@ void thread2 (void *arg)
 
         osDelay(PERIOD_TO_GET_INFO);
     } // while
-} // thread2
+} // calcMetricsTask
 
-void thread3 (void *arg)
+void sendUartDataTask (void *arg)
 {
     char str[50] = { 0 };
     while (1) {
@@ -81,7 +81,7 @@ void thread3 (void *arg)
 
         osDelay(PERIOD_TO_SEND_INFO);
     } // while
-} // thread3
+} // sendUartDataTask
 
 int main (void)
 {
@@ -94,9 +94,9 @@ int main (void)
         return -1;
     }
 
-    thread1_id = osThreadNew(thread1, NULL, NULL);
-    thread2_id = osThreadNew(thread2, NULL, NULL);
-    thread3_id = osThreadNew(thread3, NULL, NULL);
+    getTempSensTaks_id = osThreadNew(getTempSensTaks, NULL, NULL);
+    calcMetricsTask_id = osThreadNew(calcMetricsTask, NULL, NULL);
+    sendUartDataTask_id = osThreadNew(sendUartDataTask, NULL, NULL);
 
     leds_configLeds();
     uart_setupUart();

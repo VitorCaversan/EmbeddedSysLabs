@@ -53,8 +53,6 @@ int main (void)
     thread2_id = osThreadNew(thread2, NULL, NULL);
     thread3_id = osThreadNew(thread3, NULL, NULL);
 
-    //sysTick_setClkFreq();
-    //sysTick_setupSysTick();
     leds_configLeds();
 
     osKernelStart();
