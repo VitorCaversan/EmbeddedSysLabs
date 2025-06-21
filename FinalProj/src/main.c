@@ -15,6 +15,8 @@
 #include "Uart/uart.h"
 #include "SysTick/sysTick.h"
 
+#define CMD_MAX_SIZE 6
+
 typedef enum
 {
     ELEVATOR = 0,
@@ -58,18 +60,20 @@ void elevadorE(void* argument)
     static uint8_t vect_zero = 0;
     volatile bool floor_changed = false;
 
-    char cmd[3] = {0};
+    char cmd[CMD_MAX_SIZE] = {0};
     char msg[10];
 
     // RESET
     cmd[ELEVATOR] = 'e'; // Qual elevador
     cmd[CMD] = 'r'; // resetar
+    cmd[CMD + 1] = 0x0D;
     osMessageQueuePut(queueUart_id, cmd, 0, 0);
     osDelay(1000);
 
     // FECHAR
     cmd[ELEVATOR] = 'e'; // Qual elevador
     cmd[CMD] = 'f'; // fechar
+    cmd[CMD + 1] = 0x0D;
     osMessageQueuePut(queueUart_id, cmd, 0, 0);
 
     while (1)
@@ -93,12 +97,14 @@ void elevadorE(void* argument)
             {
                 cmd[ELEVATOR] = 'e'; // Qual elevador
                 cmd[CMD] = 's'; // subir
+                cmd[CMD + 1] = 0x0D;
                 osMessageQueuePut(queueUart_id, cmd, 0, 0);
             }
             else if (curr_floor > next_floor)
             {
                 cmd[ELEVATOR] = 'e'; // Qual elevador
                 cmd[CMD] = 'd'; // descer
+                cmd[CMD + 1] = 0x0D;
                 osMessageQueuePut(queueUart_id, cmd, 0, 0);
             }
         }
@@ -123,12 +129,14 @@ void elevadorE(void* argument)
             {
                 cmd[ELEVATOR] = 'e'; // Qual elevador
                 cmd[CMD] = 's'; // subir
+                cmd[CMD + 1] = 0x0D;
                 osMessageQueuePut(queueUart_id, cmd, 0, 0);
             }
             else if (curr_floor > next_floor)
             {
                 cmd[ELEVATOR] = 'e'; // Qual elevador
                 cmd[CMD] = 'd'; // descer
+                cmd[CMD + 1] = 0x0D;
                 osMessageQueuePut(queueUart_id, cmd, 0, 0);
             }
 
@@ -146,10 +154,12 @@ void elevadorE(void* argument)
                 dest_vect[curr_floor] = 0;
                 cmd[ELEVATOR] = 'e'; // Qual elevador
                 cmd[CMD] = 'p'; // parar
+                cmd[CMD + 1] = 0x0D;
                 osMessageQueuePut(queueUart_id, cmd, 0, 0);
 
                 cmd[ELEVATOR] = 'e'; // Qual elevador
                 cmd[CMD] = 'a'; // abrir porta
+                cmd[CMD + 1] = 0x0D;
                 osMessageQueuePut(queueUart_id, cmd, 0, 0);
                 osTimerStart(timerE_id, 3000);
                 osThreadFlagsWait(0x0002, osFlagsWaitAny, osWaitForever);
@@ -173,6 +183,7 @@ void elevadorE(void* argument)
             {
                 cmd[ELEVATOR] = 'e'; // Qual elevador
                 cmd[CMD] = 'f'; // fechar porta
+                cmd[CMD + 1] = 0x0D;
                 osMessageQueuePut(queueUart_id, cmd, 0, 0);
             }
         }
@@ -183,12 +194,14 @@ void elevadorE(void* argument)
             {
                 cmd[ELEVATOR] = 'e'; // Qual elevador
                 cmd[CMD] = 's'; // subir
+                cmd[CMD + 1] = 0x0D;
                 osMessageQueuePut(queueUart_id, cmd, 0, 0);
             }
             else if (curr_floor > next_floor)
             {
                 cmd[ELEVATOR] = 'e'; // Qual elevador
                 cmd[CMD] = 'd'; // descer
+                cmd[CMD + 1] = 0x0D;
                 osMessageQueuePut(queueUart_id, cmd, 0, 0);
             }
         }
@@ -207,18 +220,20 @@ void elevadorC(void* argument)
     static uint8_t vect_zero = 0;
     volatile bool floor_changed = false;
 
-    char cmd[3] = {0};
+    char cmd[CMD_MAX_SIZE] = {0};
     char msg[10];
 
     // ENVIA RESET
     cmd[ELEVATOR] = 'c'; // Qual elevador
     cmd[CMD] = 'r'; // resetar
+    cmd[CMD + 1] = 0x0D;
     osMessageQueuePut(queueUart_id, cmd, 0, 0);
     osDelay(1000);
 
     // FECHAR AS PORTAS
     cmd[ELEVATOR] = 'c';
     cmd[CMD] = 'f'; // fechar
+    cmd[CMD + 1] = 0x0D;
     osMessageQueuePut(queueUart_id, cmd, 0, 0);
 
     while (1)
@@ -245,6 +260,7 @@ void elevadorC(void* argument)
             {
                 cmd[ELEVATOR] = 'c'; // Qual elevador
                 cmd[CMD] = 's'; // subir
+                cmd[CMD + 1] = 0x0D;
                 osMessageQueuePut(queueUart_id, cmd, 0, 0);
             }
             // manda descer caso curr_floor for maior que o próximo andar
@@ -252,6 +268,7 @@ void elevadorC(void* argument)
             {
                 cmd[ELEVATOR] = 'c'; // Qual elevador
                 cmd[CMD] = 'd'; // descer
+                cmd[CMD + 1] = 0x0D;
                 osMessageQueuePut(queueUart_id, cmd, 0, 0);
             }
         } // if do botão externo
@@ -276,12 +293,14 @@ void elevadorC(void* argument)
             {
                 cmd[ELEVATOR] = 'c'; // Qual elevador
                 cmd[CMD] = 's'; // subir
+                cmd[CMD + 1] = 0x0D;
                 osMessageQueuePut(queueUart_id, cmd, 0, 0);
             }
             else if (curr_floor > next_floor)
             {
                 cmd[ELEVATOR] = 'c'; // Qual elevador
                 cmd[CMD] = 'd'; // descer
+                cmd[CMD + 1] = 0x0D;
                 osMessageQueuePut(queueUart_id, cmd, 0, 0);
             }
         }
@@ -299,10 +318,12 @@ void elevadorC(void* argument)
 
                 cmd[ELEVATOR] = 'c'; // Qual elevador
                 cmd[CMD] = 'p'; // parar
+                cmd[CMD + 1] = 0x0D;
                 osMessageQueuePut(queueUart_id, cmd, 0, 0);
 
                 cmd[ELEVATOR] = 'c'; // Qual elevador
                 cmd[CMD] = 'a'; // abrir porta
+                cmd[CMD + 1] = 0x0D;
                 osMessageQueuePut(queueUart_id, cmd, 0, 0);
                 osTimerStart(timerC_id, 3000);
                 osThreadFlagsWait(0x0001, osFlagsWaitAny, osWaitForever);
@@ -326,6 +347,7 @@ void elevadorC(void* argument)
             {
                 cmd[ELEVATOR] = 'c'; // Qual elevador
                 cmd[CMD] = 'f'; // fechar porta
+                cmd[CMD + 1] = 0x0D;
                 osMessageQueuePut(queueUart_id, cmd, 0, 0);
             }
         }
@@ -338,12 +360,14 @@ void elevadorC(void* argument)
             {
                 cmd[ELEVATOR] = 'c'; // Qual elevador
                 cmd[CMD] = 's'; // subir
+                cmd[CMD + 1] = 0x0D;
                 osMessageQueuePut(queueUart_id, cmd, 0, 0);
             }
             else if (curr_floor > next_floor)
             {
                 cmd[ELEVATOR] = 'c'; // Qual elevador
                 cmd[CMD] = 'd'; // descer
+                cmd[CMD + 1] = 0x0D;
                 osMessageQueuePut(queueUart_id, cmd, 0, 0);
             }
         }
@@ -362,7 +386,7 @@ void elevadorD(void* argument)
     static uint8_t vect_zero = 0;
     volatile bool floor_changed = false;
 
-    char cmd[3] = {0};
+    char cmd[CMD_MAX_SIZE] = {0};
     char msg[10];
     char floor_letters[] = {
         'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p'};
@@ -370,12 +394,14 @@ void elevadorD(void* argument)
     // ENVIA RESET
     cmd[ELEVATOR] = 'd'; // Qual elevador
     cmd[CMD] = 'r'; // resetar
+    cmd[CMD + 1] = 0x0D;
     osMessageQueuePut(queueUart_id, cmd, 0, 0);
     osDelay(1000);
 
     // FECHAR AS PORTAS
     cmd[ELEVATOR] = 'd';
     cmd[CMD] = 'f'; // fechar
+    cmd[CMD + 1] = 0x0D;
     osMessageQueuePut(queueUart_id, cmd, 0, 0);
 
     while (1)
@@ -398,12 +424,14 @@ void elevadorD(void* argument)
             {
                 cmd[ELEVATOR] = 'd'; // Qual elevador
                 cmd[CMD] = 's'; // subir
+                cmd[CMD + 1] = 0x0D;
                 osMessageQueuePut(queueUart_id, cmd, 0, 0);
             }
             else if (curr_floor > next_floor)
             {
                 cmd[ELEVATOR] = 'd'; // Qual elevador
                 cmd[CMD] = 'd'; // descer
+                cmd[CMD + 1] = 0x0D;
                 osMessageQueuePut(queueUart_id, cmd, 0, 0);
             }
         } // if do botão externo
@@ -429,12 +457,14 @@ void elevadorD(void* argument)
             {
                 cmd[ELEVATOR] = 'd'; // Qual elevador
                 cmd[CMD] = 's'; // subir
+                cmd[CMD + 1] = 0x0D;
                 osMessageQueuePut(queueUart_id, cmd, 0, 0);
             }
             else if (curr_floor > next_floor)
             {
                 cmd[ELEVATOR] = 'd'; // Qual elevador
                 cmd[CMD] = 'd'; // descer
+                cmd[CMD + 1] = 0x0D;
                 osMessageQueuePut(queueUart_id, cmd, 0, 0);
             }
 
@@ -452,10 +482,12 @@ void elevadorD(void* argument)
                 dest_vect[curr_floor] = 0;
                 cmd[ELEVATOR] = 'd'; // Qual elevador
                 cmd[CMD] = 'p'; // parar
+                cmd[CMD + 1] = 0x0D;
                 osMessageQueuePut(queueUart_id, cmd, 0, 0);
 
                 cmd[ELEVATOR] = 'd'; // Qual elevador
                 cmd[CMD] = 'a'; // abrir porta
+                cmd[CMD + 1] = 0x0D;
                 osMessageQueuePut(queueUart_id, cmd, 0, 0);
                 osTimerStart(timerD_id, 3000);
                 osThreadFlagsWait(0x0003, osFlagsWaitAny, osWaitForever);
@@ -479,6 +511,7 @@ void elevadorD(void* argument)
             {
                 cmd[ELEVATOR] = 'd'; // Qual elevador
                 cmd[CMD] = 'f'; // fechar porta
+                cmd[CMD + 1] = 0x0D;
                 osMessageQueuePut(queueUart_id, cmd, 0, 0);
             }
         }
@@ -489,12 +522,14 @@ void elevadorD(void* argument)
             {
                 cmd[ELEVATOR] = 'd'; // Qual elevador
                 cmd[CMD] = 's'; // subir
+                cmd[CMD + 1] = 0x0D;
                 osMessageQueuePut(queueUart_id, cmd, 0, 0);
             }
             else if (curr_floor > next_floor)
             {
                 cmd[ELEVATOR] = 'd'; // Qual elevador
                 cmd[CMD] = 'd'; // descer
+                cmd[CMD + 1] = 0x0D;
                 osMessageQueuePut(queueUart_id, cmd, 0, 0);
             }
         }
@@ -507,7 +542,7 @@ void uartRead(void* arg)
     unsigned long bytesRead = 0;
     while (1)
     {
-        bytesRead = uart_GetBytes(UART0_BASE, (uint8_t*)msg, sizeof(msg) - 1);
+        bytesRead = uart_GetBytes(UART0_BASE, (unsigned char *)msg, sizeof(msg) - 1);
         if (msg[ELEVATOR] == 'e')
         {
             osMessageQueuePut(queueE_id, msg, 0, 0);
@@ -521,13 +556,14 @@ void uartRead(void* arg)
             osMessageQueuePut(queueD_id, msg, 0, 0);
         }
         memset(msg, 0, sizeof(msg));
-        osThreadYield(); // talvez usar osDelay(1) no lugar
+        // osThreadYield();
+        osDelay(100); // Delay to avoid busy waiting
     }
 }
 
 void uartWrite(void* arg)
 {
-    char msg[4] = {0};
+    char msg[CMD_MAX_SIZE] = {0};
     while (1)
     {
         osMessageQueueGet(queueUart_id, msg, NULL, osWaitForever);
@@ -538,7 +574,7 @@ void uartWrite(void* arg)
         }
         else
         {
-            uart_sendArray((const char*)msg, 3);
+            uart_sendArray((const char*)msg, CMD_MAX_SIZE);
         }
 
         memset(msg, 0, sizeof(msg));
