@@ -48,4 +48,15 @@ extern void uart_sendArray(const char *str, unsigned long size);
  */
 extern void uart_sendValInDecimal(unsigned long val);
 
+/**
+ * @brief Gets all bytes available in the UART0 receive buffer.
+ * 
+ * @param uartBase The base address of the UART peripheral (e.g., UART0_BASE)
+ * @param buff     Pointer to the buffer where the received bytes will be stored
+ * @param buffSize The size of the buffer in bytes
+ * @return unsigned long The number of bytes read from the UART receive buffer
+ */
+extern unsigned long
+uart_GetBytes(unsigned long uartBase, unsigned char* buff, unsigned long buffSize);
+
 #endif // _UART_H_

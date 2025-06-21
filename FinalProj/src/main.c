@@ -3,7 +3,6 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "system_TM4C1294.h" // CMSIS-Core
 #include "cmsis_os2.h"       // CMSIS-RTOS
 #include "inc/hw_memmap.h"
 #include "driverlib/sysctl.h"
@@ -13,8 +12,15 @@
 #include "driverlib/interrupt.h"
 #include "driverlib/uart.h"
 
-#include "src/Uart/uart.h"
-#include "src/SysTick/sysTick.h"
+#include "Uart/uart.h"
+#include "SysTick/sysTick.h"
+
+typedef enum
+{
+    ELEVATOR = 0,
+    CMD,
+    FLOOR
+} DataIdx;
 
 osThreadId_t elevadorE_id, elevadorC_id, elevadorD_id;
 osThreadId_t uartRead_id, uartWrite_id;
@@ -22,6 +28,8 @@ osThreadId_t uartRead_id, uartWrite_id;
 osTimerId_t timerE_id, timerC_id, timerD_id;
 
 osMessageQueueId_t queueE_id, queueC_id, queueD_id, queueUart_id;
+
+static size_t strnlen(const char* str, size_t max_len);
 
 void callbackE(void* arg)
 {
@@ -41,7 +49,7 @@ void callbackD(void* arg)
 void elevadorE(void* argument)
 {
     static uint8_t curr_floor = 0;
-    static uint8_t next_floor = -1;
+    static long    next_floor = -1;
     static uint8_t dest_vect[16];
 
     static uint8_t i;
@@ -50,29 +58,27 @@ void elevadorE(void* argument)
     static uint8_t vect_zero = 0;
     volatile bool floor_changed = false;
 
-    char cmd[2];
+    char cmd[3] = {0};
     char msg[10];
-    char floor_letters[] = {
-        'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p'};
 
     // RESET
-    cmd[0] = 'e'; // Qual elevador
-    cmd[1] = 'r'; // resetar
+    cmd[ELEVATOR] = 'e'; // Qual elevador
+    cmd[CMD] = 'r'; // resetar
     osMessageQueuePut(queueUart_id, cmd, NULL, osWaitForever);
     osDelay(1000);
 
     // FECHAR
-    cmd[0] = 'e'; // Qual elevador
-    cmd[1] = 'f'; // fechar
+    cmd[ELEVATOR] = 'e'; // Qual elevador
+    cmd[CMD] = 'f'; // fechar
     osMessageQueuePut(queueUart_id, cmd, NULL, osWaitForever);
 
-    for (;;)
+    while (1)
     {
         osMessageQueueGet(queueE_id, msg, NULL, osWaitForever);
-        // BOTOES EXTERNOS
-        if (msg[1] == 'E')
+        
+        if (msg[CMD] == 'E') // BOTOES EXTERNOS
         {                                               // botao externo
-            sscanf(msg, "%*c%*c%d%*c", &ext_btn_floor); // Auxiliar que recebe o valor do andar do
+            sscanf(msg, "%*c%*c%hhu%*c", &ext_btn_floor); // Auxiliar que recebe o valor do andar do
                                                         // botão externo pressionado
             dest_vect[ext_btn_floor] = 1;               // Atualiza o vetor de destino do elevador
 
@@ -85,26 +91,24 @@ void elevadorE(void* argument)
 
             if (curr_floor < next_floor)
             {
-                cmd[0] = 'e'; // Qual elevador
-                cmd[1] = 's'; // subir
+                cmd[ELEVATOR] = 'e'; // Qual elevador
+                cmd[CMD] = 's'; // subir
                 osMessageQueuePut(queueUart_id, cmd, NULL, osWaitForever);
             }
             else if (curr_floor > next_floor)
             {
-                cmd[0] = 'e'; // Qual elevador
-                cmd[1] = 'd'; // descer
+                cmd[ELEVATOR] = 'e'; // Qual elevador
+                cmd[CMD] = 'd'; // descer
                 osMessageQueuePut(queueUart_id, cmd, NULL, osWaitForever);
             }
-
-        } // if do botão externo
-        else if (msg[1] == 'I')
-        { // botao interno
-            for (i = 0; i < 16; i++)
+        }
+        else if (msg[CMD] == 'I') // Inside button
+        {
+            unsigned char floorIdx = 0;
+            if (msg[FLOOR] >= 'a' && msg[FLOOR] <= 'p')
             {
-                if (floor_letters[i] == msg[2])
-                {
-                    dest_vect[i] = 1;
-                }
+                floorIdx = (msg[FLOOR] - 'a');
+                dest_vect[floorIdx] = 1;
             }
 
             for (i = 0; i < 16; i++)
@@ -117,37 +121,37 @@ void elevadorE(void* argument)
 
             if (curr_floor < next_floor)
             {
-                cmd[0] = 'e'; // Qual elevador
-                cmd[1] = 's'; // subir
+                cmd[ELEVATOR] = 'e'; // Qual elevador
+                cmd[CMD] = 's'; // subir
                 osMessageQueuePut(queueUart_id, cmd, NULL, osWaitForever);
             }
             else if (curr_floor > next_floor)
             {
-                cmd[0] = 'e'; // Qual elevador
-                cmd[1] = 'd'; // descer
+                cmd[ELEVATOR] = 'e'; // Qual elevador
+                cmd[CMD] = 'd'; // descer
                 osMessageQueuePut(queueUart_id, cmd, NULL, osWaitForever);
             }
 
         } // if do botão interno
 
-        else if ((msg[1] >= '0' && msg[0] == 'c' && msg[1] <= '9') ||
-                 (msg[2] >= '0' && msg[1] <= '2'))
+        else if ((msg[CMD] >= '0' && msg[ELEVATOR] == 'c' && msg[CMD] <= '9') ||
+                 (msg[FLOOR] >= '0' && msg[CMD] <= '2'))
         {
             floor_changed = true;
 
-            sscanf(msg, "%*c%d", &signal_feedback);
+            sscanf(msg, "%*c%hhu", &signal_feedback);
             curr_floor = signal_feedback;
             if (curr_floor == next_floor)
             {
                 dest_vect[curr_floor] = 0;
-                cmd[0] = 'e'; // Qual elevador
-                cmd[1] = 'p'; // parar
+                cmd[ELEVATOR] = 'e'; // Qual elevador
+                cmd[CMD] = 'p'; // parar
                 osMessageQueuePut(queueUart_id, cmd, NULL, osWaitForever);
 
-                cmd[0] = 'e'; // Qual elevador
-                cmd[1] = 'a'; // abrir porta
+                cmd[ELEVATOR] = 'e'; // Qual elevador
+                cmd[CMD] = 'a'; // abrir porta
                 osMessageQueuePut(queueUart_id, cmd, NULL, osWaitForever);
-                osTimerStart(timere_id, 3000);
+                osTimerStart(timerE_id, 3000);
                 osThreadFlagsWait(0x0002, osFlagsWaitAny, osWaitForever);
 
                 for (i = 0; i < 16; i++)
@@ -165,10 +169,10 @@ void elevadorE(void* argument)
         } // Fim else do feedback
         else
         {
-            if (msg[1] == 'A')
+            if (msg[CMD] == 'A')
             {
-                cmd[0] = 'e'; // Qual elevador
-                cmd[1] = 'f'; // fechar porta
+                cmd[ELEVATOR] = 'e'; // Qual elevador
+                cmd[CMD] = 'f'; // fechar porta
                 osMessageQueuePut(queueUart_id, cmd, NULL, osWaitForever);
             }
         }
@@ -177,24 +181,24 @@ void elevadorE(void* argument)
         {
             if (curr_floor < next_floor)
             {
-                cmd[0] = 'e'; // Qual elevador
-                cmd[1] = 's'; // subir
+                cmd[ELEVATOR] = 'e'; // Qual elevador
+                cmd[CMD] = 's'; // subir
                 osMessageQueuePut(queueUart_id, cmd, NULL, osWaitForever);
             }
             else if (curr_floor > next_floor)
             {
-                cmd[0] = 'e'; // Qual elevador
-                cmd[1] = 'd'; // descer
+                cmd[ELEVATOR] = 'e'; // Qual elevador
+                cmd[CMD] = 'd'; // descer
                 osMessageQueuePut(queueUart_id, cmd, NULL, osWaitForever);
             }
         }
     }
 }
 
-void elevadorC_id(void* argument)
+void elevadorC(void* argument)
 {
     static uint8_t curr_floor = 0;
-    static uint8_t next_floor = -1;
+    static long    next_floor = -1;
     static uint8_t dest_vect[16];
 
     static uint8_t i;
@@ -203,29 +207,27 @@ void elevadorC_id(void* argument)
     static uint8_t vect_zero = 0;
     volatile bool floor_changed = false;
 
-    char cmd[2];
+    char cmd[3] = {0};
     char msg[10];
-    char floor_letters[] = {
-        'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p'};
 
     // ENVIA RESET
-    cmd[0] = 'c'; // Qual elevador
-    cmd[1] = 'r'; // resetar
+    cmd[ELEVATOR] = 'c'; // Qual elevador
+    cmd[CMD] = 'r'; // resetar
     osMessageQueuePut(queueUart_id, cmd, NULL, osWaitForever);
     osDelay(1000);
 
     // FECHAR AS PORTAS
-    cmd[0] = 'c';
-    cmd[1] = 'f'; // fechar
+    cmd[ELEVATOR] = 'c';
+    cmd[CMD] = 'f'; // fechar
     osMessageQueuePut(queueUart_id, cmd, NULL, osWaitForever);
 
-    for (;;)
+    while (1)
     {
         osMessageQueueGet(queueC_id, msg, NULL, osWaitForever);
         // TRATAMENTO DOS BOTÕES EXTERNOS
-        if (msg[1] == 'E')
+        if (msg[CMD] == 'E')
         {                                               // botao externo
-            sscanf(msg, "%*c%*c%d%*c", &ext_btn_floor); // Auxiliar que recebe o valor do andar do
+            sscanf(msg, "%*c%*c%hhu%*c", &ext_btn_floor); // Auxiliar que recebe o valor do andar do
                                                         // botão externo pressionado
             dest_vect[ext_btn_floor] = 1;               // Atualiza o vetor de destino do elevador
 
@@ -241,32 +243,27 @@ void elevadorC_id(void* argument)
             // manda subir caso curr_floor for menor que o próximo andar
             if (curr_floor < next_floor)
             {
-                cmd[0] = 'c'; // Qual elevador
-                cmd[1] = 's'; // subir
+                cmd[ELEVATOR] = 'c'; // Qual elevador
+                cmd[CMD] = 's'; // subir
                 osMessageQueuePut(queueUart_id, cmd, NULL, osWaitForever);
             }
             // manda descer caso curr_floor for maior que o próximo andar
             else if (curr_floor > next_floor)
             {
-                cmd[0] = 'c'; // Qual elevador
-                cmd[1] = 'd'; // descer
+                cmd[ELEVATOR] = 'c'; // Qual elevador
+                cmd[CMD] = 'd'; // descer
                 osMessageQueuePut(queueUart_id, cmd, NULL, osWaitForever);
             }
         } // if do botão externo
-        else if (msg[1] == 'I')
-        { // botao interno
-            // Tem um vetor de letras, pois para os botões internos, ao invés de ter números
-            // indicando os andares são letras, então aqui ja converte pra números e ja salva no
-            // vetor destino, só existe um vetor de destino tanto para subir quanto para descer
-            for (i = 0; i < 16; i++)
+        else if (msg[CMD] == 'I') // Inside button
+        {
+            unsigned char floorIdx = 0;
+            if (msg[FLOOR] >= 'a' && msg[FLOOR] <= 'p')
             {
-                if (floor_letters[i] == msg[2])
-                {
-                    dest_vect[i] = 1;
-                }
+                floorIdx = (msg[FLOOR] - 'a');
+                dest_vect[floorIdx] = 1;
             }
 
-            // Atualiza o próximo andar
             for (i = 0; i < 16; i++)
             {
                 if (dest_vect[i] == 1)
@@ -275,42 +272,40 @@ void elevadorC_id(void* argument)
                 }
             }
 
-            // manda subir caso curr_floor for menor que o próximo andar
             if (curr_floor < next_floor)
             {
-                cmd[0] = 'c'; // Qual elevador
-                cmd[1] = 's'; // subir
+                cmd[ELEVATOR] = 'c'; // Qual elevador
+                cmd[CMD] = 's'; // subir
                 osMessageQueuePut(queueUart_id, cmd, NULL, osWaitForever);
             }
-            // manda descer caso curr_floor for maior que o próximo andar
             else if (curr_floor > next_floor)
             {
-                cmd[0] = 'c'; // Qual elevador
-                cmd[1] = 'd'; // descer
+                cmd[ELEVATOR] = 'c'; // Qual elevador
+                cmd[CMD] = 'd'; // descer
                 osMessageQueuePut(queueUart_id, cmd, NULL, osWaitForever);
             }
-        } // if do botão interno
+        }
 
-        else if ((msg[1] >= '0' && msg[0] == 'c' && msg[1] <= '9') ||
-                 (msg[2] >= '0' && msg[1] <= '2'))
+        else if ((msg[CMD] >= '0' && msg[ELEVATOR] == 'c' && msg[CMD] <= '9') ||
+                 (msg[FLOOR] >= '0' && msg[CMD] <= '2'))
         {
             floor_changed = true; // Flag que vai indicar que teve mudança de andar
 
-            sscanf(msg, "%*c%d", &signal_feedback);
+            sscanf(msg, "%*c%hhu", &signal_feedback);
             curr_floor = signal_feedback;
             if (curr_floor == next_floor)
             {
                 dest_vect[curr_floor] = 0; // Zera a posição que ja foi atendida no vetor de destino
 
-                cmd[0] = 'c'; // Qual elevador
-                cmd[1] = 'p'; // parar
+                cmd[ELEVATOR] = 'c'; // Qual elevador
+                cmd[CMD] = 'p'; // parar
                 osMessageQueuePut(queueUart_id, cmd, NULL, osWaitForever);
 
-                cmd[0] = 'c'; // Qual elevador
-                cmd[1] = 'a'; // abrir porta
+                cmd[ELEVATOR] = 'c'; // Qual elevador
+                cmd[CMD] = 'a'; // abrir porta
                 osMessageQueuePut(queueUart_id, cmd, NULL, osWaitForever);
                 osTimerStart(
-                    timerc_id,
+                    timerC_id,
                     3000); // Da start no timer do sistema para que a porta fique aberta 3 segundos
                 osThreadFlagsWait(
                     0x0001,
@@ -333,10 +328,10 @@ void elevadorC_id(void* argument)
         } // Fim else do feedback
         else
         { // ultimo else são os feeback de porta aberta e porta fechada
-            if (msg[1] == 'A')
+            if (msg[CMD] == 'A')
             {
-                cmd[0] = 'c'; // Qual elevador
-                cmd[1] = 'f'; // fechar porta
+                cmd[ELEVATOR] = 'c'; // Qual elevador
+                cmd[CMD] = 'f'; // fechar porta
                 osMessageQueuePut(queueUart_id, cmd, NULL, osWaitForever);
             }
         }
@@ -347,24 +342,24 @@ void elevadorC_id(void* argument)
         {
             if (curr_floor < next_floor)
             {
-                cmd[0] = 'c'; // Qual elevador
-                cmd[1] = 's'; // subir
+                cmd[ELEVATOR] = 'c'; // Qual elevador
+                cmd[CMD] = 's'; // subir
                 osMessageQueuePut(queueUart_id, cmd, NULL, osWaitForever);
             }
             else if (curr_floor > next_floor)
             {
-                cmd[0] = 'c'; // Qual elevador
-                cmd[1] = 'd'; // descer
+                cmd[ELEVATOR] = 'c'; // Qual elevador
+                cmd[CMD] = 'd'; // descer
                 osMessageQueuePut(queueUart_id, cmd, NULL, osWaitForever);
             }
         }
     }
 }
 
-void elevadorD_id(void* argument)
+void elevadorD(void* argument)
 {
     static uint8_t curr_floor = 0;
-    static uint8_t next_floor = -1;
+    static long    next_floor = -1;
     static uint8_t dest_vect[16];
 
     static uint8_t i;
@@ -373,29 +368,29 @@ void elevadorD_id(void* argument)
     static uint8_t vect_zero = 0;
     volatile bool floor_changed = false;
 
-    char cmd[2];
+    char cmd[3] = {0};
     char msg[10];
     char floor_letters[] = {
         'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p'};
 
     // ENVIA RESET
-    cmd[0] = 'd'; // Qual elevador
-    cmd[1] = 'r'; // resetar
+    cmd[ELEVATOR] = 'd'; // Qual elevador
+    cmd[CMD] = 'r'; // resetar
     osMessageQueuePut(queueUart_id, cmd, NULL, osWaitForever);
     osDelay(1000);
 
     // FECHAR AS PORTAS
-    cmd[0] = 'd';
-    cmd[1] = 'f'; // fechar
+    cmd[ELEVATOR] = 'd';
+    cmd[CMD] = 'f'; // fechar
     osMessageQueuePut(queueUart_id, cmd, NULL, osWaitForever);
 
-    for (;;)
+    while (1)
     {
         osMessageQueueGet(queueD_id, msg, NULL, osWaitForever);
         // TRATAMENTO DOS BOTÕES EXTERNOS
-        if (msg[1] == 'E')
+        if (msg[CMD] == 'E')
         {                                               // botao externo
-            sscanf(msg, "%*c%*c%d%*c", &ext_btn_floor); // Auxiliar que recebe o valor do andar do
+            sscanf(msg, "%*c%*c%hhu%*c", &ext_btn_floor); // Auxiliar que recebe o valor do andar do
                                                         // botão externo pressionado
             dest_vect[ext_btn_floor] = 1;               // Atualiza o vetor de destino do elevador
 
@@ -407,22 +402,22 @@ void elevadorD_id(void* argument)
             }
             if (curr_floor < next_floor)
             {
-                cmd[0] = 'd'; // Qual elevador
-                cmd[1] = 's'; // subir
+                cmd[ELEVATOR] = 'd'; // Qual elevador
+                cmd[CMD] = 's'; // subir
                 osMessageQueuePut(queueUart_id, cmd, NULL, osWaitForever);
             }
             else if (curr_floor > next_floor)
             {
-                cmd[0] = 'd'; // Qual elevador
-                cmd[1] = 'd'; // descer
+                cmd[ELEVATOR] = 'd'; // Qual elevador
+                cmd[CMD] = 'd'; // descer
                 osMessageQueuePut(queueUart_id, cmd, NULL, osWaitForever);
             }
         } // if do botão externo
-        else if ((msg[1] == 'I') && (msg[2] >= 'a') && (msg[2] <= 'p'))
+        else if ((msg[CMD] == 'I') && (msg[FLOOR] >= 'a') && (msg[FLOOR] <= 'p'))
         { // botao interno
             for (i = 0; i < 16; i++)
             {
-                if (floor_letters[i] == msg[2])
+                if (floor_letters[i] == msg[FLOOR])
                 {
                     dest_vect[i] = 1;
                 }
@@ -438,37 +433,37 @@ void elevadorD_id(void* argument)
 
             if (curr_floor < next_floor)
             {
-                cmd[0] = 'd'; // Qual elevador
-                cmd[1] = 's'; // subir
+                cmd[ELEVATOR] = 'd'; // Qual elevador
+                cmd[CMD] = 's'; // subir
                 osMessageQueuePut(queueUart_id, cmd, NULL, osWaitForever);
             }
             else if (curr_floor > next_floor)
             {
-                cmd[0] = 'd'; // Qual elevador
-                cmd[1] = 'd'; // descer
+                cmd[ELEVATOR] = 'd'; // Qual elevador
+                cmd[CMD] = 'd'; // descer
                 osMessageQueuePut(queueUart_id, cmd, NULL, osWaitForever);
             }
 
         } // if do botão interno
 
-        else if ((msg[1] >= '0' && msg[1] <= '9') || (msg[2] >= '0' && msg[1] <= '2'))
+        else if ((msg[CMD] >= '0' && msg[CMD] <= '9') || (msg[FLOOR] >= '0' && msg[CMD] <= '2'))
         {
             floor_changed = true;
 
-            sscanf(msg, "%*c%d", &signal_feedback);
+            sscanf(msg, "%*c%hhu", &signal_feedback);
             curr_floor = signal_feedback;
 
             if (curr_floor == next_floor)
             {
                 dest_vect[curr_floor] = 0;
-                cmd[0] = 'd'; // Qual elevador
-                cmd[1] = 'p'; // parar
+                cmd[ELEVATOR] = 'd'; // Qual elevador
+                cmd[CMD] = 'p'; // parar
                 osMessageQueuePut(queueUart_id, cmd, NULL, osWaitForever);
 
-                cmd[0] = 'd'; // Qual elevador
-                cmd[1] = 'a'; // abrir porta
+                cmd[ELEVATOR] = 'd'; // Qual elevador
+                cmd[CMD] = 'a'; // abrir porta
                 osMessageQueuePut(queueUart_id, cmd, NULL, osWaitForever);
-                osTimerStart(timerd_id, 3000);
+                osTimerStart(timerD_id, 3000);
                 osThreadFlagsWait(0x0003, osFlagsWaitAny, osWaitForever);
 
                 for (i = 0; i < 16; i++)
@@ -486,10 +481,10 @@ void elevadorD_id(void* argument)
         } // Fim else do feedback
         else
         {
-            if (msg[1] == 'A')
+            if (msg[CMD] == 'A')
             {
-                cmd[0] = 'd'; // Qual elevador
-                cmd[1] = 'f'; // fechar porta
+                cmd[ELEVATOR] = 'd'; // Qual elevador
+                cmd[CMD] = 'f'; // fechar porta
                 osMessageQueuePut(queueUart_id, cmd, NULL, osWaitForever);
             }
         }
@@ -498,14 +493,14 @@ void elevadorD_id(void* argument)
         {
             if (curr_floor < next_floor)
             {
-                cmd[0] = 'd'; // Qual elevador
-                cmd[1] = 's'; // subir
+                cmd[ELEVATOR] = 'd'; // Qual elevador
+                cmd[CMD] = 's'; // subir
                 osMessageQueuePut(queueUart_id, cmd, NULL, osWaitForever);
             }
             else if (curr_floor > next_floor)
             {
-                cmd[0] = 'd'; // Qual elevador
-                cmd[1] = 'd'; // descer
+                cmd[ELEVATOR] = 'd'; // Qual elevador
+                cmd[CMD] = 'd'; // descer
                 osMessageQueuePut(queueUart_id, cmd, NULL, osWaitForever);
             }
         }
@@ -514,19 +509,20 @@ void elevadorD_id(void* argument)
 
 void uartRead(void* arg)
 {
-    char msg[6];
+    char msg[10] = {0};
+    unsigned long bytesRead = 0;
     while (1)
     {
-        // msg recebe a mensagem da uart
-        if (msg[0] == 'e')
+        bytesRead = uart_GetBytes(UART0_BASE, (uint8_t*)msg, sizeof(msg) - 1);
+        if (msg[ELEVATOR] == 'e')
         {
             osMessageQueuePut(queueE_id, msg, NULL, 0);
         }
-        else if (msg[0] == 'c')
+        else if (msg[ELEVATOR] == 'c')
         {
             osMessageQueuePut(queueC_id, msg, NULL, 0);
         }
-        else if (msg[0] == 'd')
+        else if (msg[ELEVATOR] == 'd')
         {
             osMessageQueuePut(queueD_id, msg, NULL, 0);
         }
@@ -536,15 +532,24 @@ void uartRead(void* arg)
 
 void uartWrite(void* arg)
 {
-    char msg[2];
+    char msg[4] = {0};
     while (1)
     {
         osMessageQueueGet(queueUart_id, msg, NULL, osWaitForever);
-        // printa msg na uart
+
+        if (strnlen(msg, 4) < 4)
+        {
+            uart_sendString((const char*)msg);
+        }
+        else
+        {
+            uart_sendArray((const char*)msg, 3);
+            msg[3] = '\0';
+        }
     }
 }
 
-void main(void)
+int main(void)
 {
     sysTick_setClkFreq();
     sysTick_setupSysTick();
@@ -573,4 +578,16 @@ void main(void)
 
     while (1)
         ;
+}
+
+static size_t strnlen(const char* str, size_t max_len)
+{
+    size_t len = 0;
+    while (*str != '\0' && len < max_len)
+    {
+        len++;
+        str++;
+    }
+
+    return len;
 }
