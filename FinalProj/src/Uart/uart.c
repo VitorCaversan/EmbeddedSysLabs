@@ -66,10 +66,16 @@ extern unsigned long
 uart_GetBytes(unsigned long uartBase, unsigned char *buff, unsigned long buffSize)
 {
     unsigned long byteCount = 0;
+    size_t gottenChar = 0;
 
     while (UARTCharsAvail(uartBase) && (byteCount < buffSize))
     {
-        buff[byteCount++] = UARTCharGetNonBlocking(uartBase);
+        gottenChar = UARTCharGetNonBlocking(uartBase);
+        
+        if (gottenChar != 0xFF)
+        {
+            buff[byteCount++] = (unsigned char)gottenChar;
+        }
     }
 
     return byteCount;
