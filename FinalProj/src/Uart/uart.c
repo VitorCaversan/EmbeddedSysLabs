@@ -3,10 +3,20 @@
 
 //--------------------------------------------------
 
+#define RX_BUF_SIZE 16
+
+//--------------------------------------------------
+
 /**
  * @brief Handles a UART interrupt.
  */
 static void uartIntHandler(void);
+
+//--------------------------------------------------
+
+volatile unsigned char rxBuff[RX_BUF_SIZE];
+volatile unsigned char rxBuffSend[RX_BUF_SIZE];
+volatile unsigned long rxHead = 0;
 
 //--------------------------------------------------
 
@@ -19,7 +29,7 @@ extern void uart_setupUart(void)
                         sysTick_getClkFreq(),
                         115200,
                         (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE | UART_CONFIG_PAR_NONE));
-    UARTFIFOEnable(UART0_BASE);
+    UARTFIFODisable(UART0_BASE);
     UARTIntEnable(UART0_BASE, UART_INT_RX);
     UARTIntRegister(UART0_BASE, uartIntHandler);
     SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
@@ -66,7 +76,7 @@ extern unsigned long
 uart_GetBytes(unsigned long uartBase, unsigned char *buff, unsigned long buffSize)
 {
     unsigned long byteCount = 0;
-    char gottenChar = 0;
+    unsigned char gottenChar = 0;
 
     while (UARTCharsAvail(uartBase) && (byteCount < buffSize))
     {
@@ -74,7 +84,7 @@ uart_GetBytes(unsigned long uartBase, unsigned char *buff, unsigned long buffSiz
         
         if (gottenChar != 0xFF)
         {
-            buff[byteCount++] = (unsigned char)gottenChar;
+            buff[byteCount++] = gottenChar;
         }
     }
 
@@ -87,5 +97,28 @@ static void uartIntHandler(void)
 {
     uint32_t status = UARTIntStatus(UART0_BASE, true);
     UARTIntClear(UART0_BASE, status);
-    uint8_t last = (uint8_t)UARTCharGetNonBlocking(UART0_BASE);
+    rxBuff[rxHead] = UARTCharGet(UART0_BASE);
+
+    if (rxBuff[rxHead] == '\n')
+    {
+        unsigned long msgStartIdx = 0;
+        while (rxBuff[msgStartIdx] != 'e' &&
+                rxBuff[msgStartIdx] != 'c' &&
+                rxBuff[msgStartIdx] != 'd' &&
+                msgStartIdx < RX_BUF_SIZE)
+        {
+            msgStartIdx++;
+        }
+
+        memset((void *)rxBuffSend, 0, RX_BUF_SIZE);
+        memcpy((void *)rxBuffSend, (const void *)&rxBuff[msgStartIdx], RX_BUF_SIZE - msgStartIdx);
+        memset((void *)rxBuff, 0, RX_BUF_SIZE);
+
+        osMessageQueuePut(queueUartRx_id, (const void *)rxBuffSend, 0, 0);
+        rxHead = 0;
+    }
+    else
+    {
+        rxHead = (rxHead + 1) % RX_BUF_SIZE;
+    }
 }
