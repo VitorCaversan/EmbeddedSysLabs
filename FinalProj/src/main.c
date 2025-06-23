@@ -63,9 +63,13 @@ static void clearFloorRequest(ElevatorInfo *pElevatorInfo, unsigned char floor);
 
 static void decideNextMove(ElevatorInfo *pElevatorInfo);
 
-static bool anyRequestsAbove(ElevatorInfo *pElevatorInfo);
+static bool anyRequestsAboveToGoUp(ElevatorInfo *pElevatorInfo);
 
-static bool anyRequestsBelow(ElevatorInfo *pElevatorInfo);
+static bool anyRequestsAboveToGoDown(ElevatorInfo *pElevatorInfo);
+
+static bool anyRequestsBelowToGoUp(ElevatorInfo *pElevatorInfo);
+
+static bool anyRequestsBelowToGoDown(ElevatorInfo *pElevatorInfo);
 
 static bool anyRequestsInGeneral(ElevatorInfo *pElevatorInfo);
 
@@ -98,7 +102,7 @@ void elevadorE(void* argument)
     char msg[MSG_MAX_SIZE] = {0};
 
     queueCmd(cmd, 'e', 'r');
-    osDelay(1000);
+    osDelay(5000);
     queueCmd(cmd, 'e', 'f');
 
     while (1)
@@ -136,7 +140,7 @@ void elevadorE(void* argument)
 
                 queueCmd(cmd, 'e', 'p');
                 queueCmd(cmd, 'e', 'a');
-                osDelay(3000);
+                osDelay(8000);
             }
         }
         else
@@ -187,7 +191,7 @@ void elevadorC(void* argument)
     char msg[MSG_MAX_SIZE] = {0};
 
     queueCmd(cmd, 'c', 'r');
-    osDelay(1000);
+    osDelay(5000);
     queueCmd(cmd, 'c', 'f');
 
     while (1)
@@ -225,7 +229,7 @@ void elevadorC(void* argument)
 
                 queueCmd(cmd, 'c', 'p');
                 queueCmd(cmd, 'c', 'a');
-                osDelay(3000);
+                osDelay(8000);
             }
         }
         else
@@ -276,7 +280,7 @@ void elevadorD(void* argument)
     char msg[MSG_MAX_SIZE] = {0};
 
     queueCmd(cmd, 'd', 'r');
-    osDelay(1000);
+    osDelay(5000);
     queueCmd(cmd, 'd', 'f');
 
     while (1)
@@ -314,7 +318,7 @@ void elevadorD(void* argument)
 
                 queueCmd(cmd, 'd', 'p');
                 queueCmd(cmd, 'd', 'a');
-                osDelay(3000);
+                osDelay(8000);
             }
         }
         else
@@ -495,6 +499,7 @@ static void addFloorToDestinations(ElevatorInfo *pElevatorInfo,
                 pElevatorInfo->downRequests[floor] = 1;
             }
         }
+        break;
 
         case 'c':
         default:
@@ -519,11 +524,15 @@ static void decideNextMove(ElevatorInfo *pElevatorInfo)
 {
     if (pElevatorInfo->direction == UP)
     {
-        if (anyRequestsAbove(pElevatorInfo))
+        if (anyRequestsAboveToGoUp(pElevatorInfo))
         {
             pElevatorInfo->direction = UP;
         }
-        else if (anyRequestsBelow(pElevatorInfo))
+        else if (anyRequestsAboveToGoDown(pElevatorInfo))
+        {
+            pElevatorInfo->direction = UP;
+        }
+        else if (anyRequestsBelowToGoDown(pElevatorInfo))
         {
             pElevatorInfo->direction = DOWN;
         }
@@ -534,11 +543,15 @@ static void decideNextMove(ElevatorInfo *pElevatorInfo)
     }
     else if (pElevatorInfo->direction == DOWN)
     {
-        if (anyRequestsBelow(pElevatorInfo))
+        if (anyRequestsBelowToGoDown(pElevatorInfo))
         {
             pElevatorInfo->direction = DOWN;
         }
-        else if (anyRequestsAbove(pElevatorInfo))
+        else if (anyRequestsBelowToGoUp(pElevatorInfo))
+        {
+            pElevatorInfo->direction = DOWN;
+        }
+        else if (anyRequestsAboveToGoUp(pElevatorInfo))
         {
             pElevatorInfo->direction = UP;
         }
@@ -551,13 +564,23 @@ static void decideNextMove(ElevatorInfo *pElevatorInfo)
     {
         if (anyRequestsInGeneral(pElevatorInfo))
         {
-            pElevatorInfo->direction =
-            (pElevatorInfo->destFloor > pElevatorInfo->currFloor) ? UP : DOWN;
+            if (pElevatorInfo->destFloor > pElevatorInfo->currFloor)
+            {
+                pElevatorInfo->direction = UP;
+            }
+            else if (pElevatorInfo->destFloor < pElevatorInfo->currFloor)
+            {
+                pElevatorInfo->direction = DOWN;
+            }
+            else
+            {
+                pElevatorInfo->direction = IDLE;
+            }
         }
     }
 }
 
-static bool anyRequestsAbove(ElevatorInfo *pElevatorInfo)
+static bool anyRequestsAboveToGoUp(ElevatorInfo *pElevatorInfo)
 {
     if (pElevatorInfo->currFloor >= (FLOOR_QTY - 1))
     {
@@ -576,7 +599,45 @@ static bool anyRequestsAbove(ElevatorInfo *pElevatorInfo)
     return false;
 }
 
-static bool anyRequestsBelow(ElevatorInfo *pElevatorInfo)
+static bool anyRequestsAboveToGoDown(ElevatorInfo *pElevatorInfo)
+{
+    if (pElevatorInfo->currFloor >= (FLOOR_QTY - 1))
+    {
+        return false; // No floors above the top floor
+    }
+
+    for (unsigned char itr = (pElevatorInfo->currFloor + 1); itr < FLOOR_QTY; itr++)
+    {
+        if (pElevatorInfo->downRequests[itr] || pElevatorInfo->cabinRequests[itr])
+        {
+            pElevatorInfo->destFloor = itr;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static bool anyRequestsBelowToGoUp(ElevatorInfo *pElevatorInfo)
+{
+    if (pElevatorInfo->currFloor == 0)
+    {
+        return false; // No floors below the ground floor
+    }
+
+    for (long itr = (pElevatorInfo->currFloor - 1); itr >= 0; itr--)
+    {
+        if (pElevatorInfo->upRequests[itr] || pElevatorInfo->cabinRequests[itr])
+        {
+            pElevatorInfo->destFloor = itr;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static bool anyRequestsBelowToGoDown(ElevatorInfo *pElevatorInfo)
 {
     if (pElevatorInfo->currFloor == 0)
     {
@@ -602,7 +663,11 @@ static bool anyRequestsInGeneral(ElevatorInfo *pElevatorInfo)
         if (pElevatorInfo->upRequests[itr] || pElevatorInfo->downRequests[itr] ||
             pElevatorInfo->cabinRequests[itr])
         {
-            pElevatorInfo->destFloor = itr;
+            if (pElevatorInfo->currFloor != itr)
+            {
+                pElevatorInfo->destFloor = itr;
+            }
+
             return true;
         }
     }
