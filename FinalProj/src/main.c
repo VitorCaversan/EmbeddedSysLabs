@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "cmsis_os2.h"       // CMSIS-RTOS
+#include "cmsis_os2.h" // CMSIS-RTOS
 #include "inc/hw_memmap.h"
 #include "driverlib/sysctl.h"
 #include "driverlib/gpio.h"
@@ -47,17 +47,16 @@ typedef struct ElevatorInfo
 osThreadId_t elevadorE_id, elevadorC_id, elevadorD_id;
 osThreadId_t uartRead_id, uartWrite_id;
 
-osTimerId_t timerE_id, timerC_id, timerD_id;
-
 osMessageQueueId_t queueE_id, queueC_id, queueD_id, queueUartTx_id, queueUartRx_id;
 
 static void queueCmd(char *cmd, char elevator, char command);
 
-static size_t strnlen(const char* str, size_t max_len);
+static size_t strnlen(const char *str, size_t max_len);
 
 static bool isFloorEvent(const char *msg);
 
-static void addFloorToDestinations(ElevatorInfo *pElevatorInfo, unsigned char floor, unsigned char dir);
+static void
+addFloorToDestinations(ElevatorInfo *pElevatorInfo, unsigned char floor, unsigned char dir);
 
 static void clearFloorRequest(ElevatorInfo *pElevatorInfo, unsigned char floor);
 
@@ -73,22 +72,7 @@ static bool anyRequestsBelowToGoDown(ElevatorInfo *pElevatorInfo);
 
 static bool anyRequestsInGeneral(ElevatorInfo *pElevatorInfo);
 
-void callbackE(void* arg)
-{
-    osThreadFlagsSet(elevadorE_id, 0x0001);
-}
-
-void callbackC(void* arg)
-{
-    osThreadFlagsSet(elevadorC_id, 0x0002);
-}
-
-void callbackD(void* arg)
-{
-    osThreadFlagsSet(elevadorD_id, 0x0003);
-}
-
-void elevadorE(void* argument)
+void elevatorE_task(void *argument)
 {
     static ElevatorInfo elevatorInfo;
 
@@ -113,11 +97,11 @@ void elevadorE(void* argument)
         {
             continue;
         }
-        
+
         if (msg[CMD] == 'E') // External btns
         {
             sscanf(msg, "%*c%*c%hhu%c", &extBtnFloor, &extBtnDir);
-            
+
             addFloorToDestinations(&elevatorInfo, extBtnFloor, extBtnDir);
         }
         else if ((msg[CMD] == 'I') && (msg[FLOOR] >= 'a') && (msg[FLOOR] <= 'p')) // Internal btns
@@ -177,7 +161,7 @@ void elevadorE(void* argument)
     }
 }
 
-void elevadorC(void* argument)
+void elevatorC_task(void *argument)
 {
     static ElevatorInfo elevatorInfo;
 
@@ -202,11 +186,11 @@ void elevadorC(void* argument)
         {
             continue;
         }
-        
+
         if (msg[CMD] == 'E') // External btns
         {
             sscanf(msg, "%*c%*c%hhu%c", &extBtnFloor, &extBtnDir);
-            
+
             addFloorToDestinations(&elevatorInfo, extBtnFloor, extBtnDir);
         }
         else if ((msg[CMD] == 'I') && (msg[FLOOR] >= 'a') && (msg[FLOOR] <= 'p')) // Internal btns
@@ -266,7 +250,7 @@ void elevadorC(void* argument)
     }
 }
 
-void elevadorD(void* argument)
+void elevatorD_task(void *argument)
 {
     static ElevatorInfo elevatorInfo;
 
@@ -291,11 +275,11 @@ void elevadorD(void* argument)
         {
             continue;
         }
-        
+
         if (msg[CMD] == 'E') // External btns
         {
             sscanf(msg, "%*c%*c%hhu%c", &extBtnFloor, &extBtnDir);
-            
+
             addFloorToDestinations(&elevatorInfo, extBtnFloor, extBtnDir);
         }
         else if ((msg[CMD] == 'I') && (msg[FLOOR] >= 'a') && (msg[FLOOR] <= 'p')) // Internal btns
@@ -355,14 +339,14 @@ void elevadorD(void* argument)
     }
 }
 
-void uartRead(void* arg)
+void uartRead_task(void *arg)
 {
-    char msg[MSG_MAX_SIZE] = {0};
-    unsigned long bytesRead = 0;
+    char          msg[MSG_MAX_SIZE] = {0};
+    unsigned long bytesRead         = 0;
     while (1)
     {
         osMessageQueueGet(queueUartRx_id, msg, NULL, osWaitForever);
-        
+
         if (msg[ELEVATOR] == 'e')
         {
             osMessageQueuePut(queueE_id, msg, 0, 0);
@@ -375,14 +359,14 @@ void uartRead(void* arg)
         {
             osMessageQueuePut(queueD_id, msg, 0, 0);
         }
-        
+
         osDelay(100);
-        
+
         memset(msg, 0, sizeof(msg));
     }
 }
 
-void uartWrite(void* arg)
+void uartWrite_task(void *arg)
 {
     char msg[CMD_MAX_SIZE] = {0};
     while (1)
@@ -391,11 +375,11 @@ void uartWrite(void* arg)
 
         if (strnlen(msg, 4) < 4)
         {
-            uart_sendString((const char*)msg);
+            uart_sendString((const char *)msg);
         }
         else
         {
-            uart_sendArray((const char*)msg, CMD_MAX_SIZE);
+            uart_sendArray((const char *)msg, CMD_MAX_SIZE);
         }
 
         memset(msg, 0, sizeof(msg));
@@ -405,28 +389,24 @@ void uartWrite(void* arg)
 int main(void)
 {
     sysTick_setClkFreq();
-    
+
     osKernelInitialize();
 
     queueUartTx_id = osMessageQueueNew(30, sizeof(char) * CMD_MAX_SIZE, NULL);
     queueUartRx_id = osMessageQueueNew(30, sizeof(char) * MSG_MAX_SIZE, NULL);
-    
+
     uart_setupUart();
 
-    uartRead_id = osThreadNew(uartRead, NULL, NULL);
-    uartWrite_id = osThreadNew(uartWrite, NULL, NULL);
+    uartRead_id  = osThreadNew(uartRead_task, NULL, NULL);
+    uartWrite_id = osThreadNew(uartWrite_task, NULL, NULL);
 
     queueE_id = osMessageQueueNew(15, sizeof(char) * MSG_MAX_SIZE, NULL);
     queueC_id = osMessageQueueNew(15, sizeof(char) * MSG_MAX_SIZE, NULL);
     queueD_id = osMessageQueueNew(15, sizeof(char) * MSG_MAX_SIZE, NULL);
 
-    elevadorE_id = osThreadNew(elevadorE, NULL, NULL);
-    elevadorC_id = osThreadNew(elevadorC, NULL, NULL);
-    elevadorD_id = osThreadNew(elevadorD, NULL, NULL);
-
-    timerE_id = osTimerNew(callbackE, osTimerOnce, NULL, NULL);
-    timerC_id = osTimerNew(callbackC, osTimerOnce, NULL, NULL);
-    timerD_id = osTimerNew(callbackD, osTimerOnce, NULL, NULL);
+    elevadorE_id = osThreadNew(elevatorE_task, NULL, NULL);
+    elevadorC_id = osThreadNew(elevatorC_task, NULL, NULL);
+    elevadorD_id = osThreadNew(elevatorD_task, NULL, NULL);
 
     osKernelStart();
 
@@ -442,7 +422,7 @@ static void queueCmd(char *cmd, char elevator, char command)
     osMessageQueuePut(queueUartTx_id, cmd, 0, 0);
 }
 
-static size_t strnlen(const char* str, size_t max_len)
+static size_t strnlen(const char *str, size_t max_len)
 {
     size_t len = 0;
     while (*str != '\0' && len < max_len)
@@ -457,7 +437,7 @@ static size_t strnlen(const char* str, size_t max_len)
 static bool isFloorEvent(const char *msg)
 {
     unsigned long msgLen = 0;
-    char *msgPtr = (char *)msg;
+    char         *msgPtr = (char *)msg;
 
     while ((*msgPtr != '\r') && (*msgPtr != '\0'))
     {
@@ -477,9 +457,8 @@ static bool isFloorEvent(const char *msg)
     return false;
 }
 
-static void addFloorToDestinations(ElevatorInfo *pElevatorInfo,
-                                   unsigned char floor,
-                                   unsigned char dir)
+static void
+addFloorToDestinations(ElevatorInfo *pElevatorInfo, unsigned char floor, unsigned char dir)
 {
     switch (dir)
     {

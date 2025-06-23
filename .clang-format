@@ -14,8 +14,8 @@ SpacesInParentheses: false
 SpacesInSquareBrackets: false
 SpaceInEmptyParentheses: false
 SpaceBeforeAssignmentOperators: true
-AlignConsecutiveAssignments: false
-AlignConsecutiveDeclarations: false
+AlignConsecutiveAssignments: true
+AlignConsecutiveDeclarations: true
 AlignEscapedNewlines: Left
 AlignTrailingComments: true
 AlignAfterOpenBracket: Align
@@ -43,3 +43,5 @@ IndentCaseLabels: true
 IndentCaseBlocks: false
 IndentGotoLabels: false
 EmptyStatementBody: SameLine
+AlignConsecutiveMacros: true
+
