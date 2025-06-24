@@ -49,7 +49,7 @@ osThreadId_t uartRead_id, uartWrite_id;
 
 osMessageQueueId_t queueE_id, queueC_id, queueD_id, queueUartTx_id, queueUartRx_id;
 
-static void queueCmd(char *cmd, char elevator, char command);
+static void queueCmd(char *cmd, char elevator, char command, char floorLight);
 
 static size_t strnlen(const char *str, size_t max_len);
 
@@ -85,9 +85,9 @@ void elevatorE_task(void *argument)
     char cmd[CMD_MAX_SIZE] = {0};
     char msg[MSG_MAX_SIZE] = {0};
 
-    queueCmd(cmd, 'e', 'r');
+    queueCmd(cmd, 'e', 'r', 0);
     osDelay(5000);
-    queueCmd(cmd, 'e', 'f');
+    queueCmd(cmd, 'e', 'f', 0);
 
     while (1)
     {
@@ -109,6 +109,7 @@ void elevatorE_task(void *argument)
             unsigned char floorIdx = 0;
             if (msg[FLOOR] >= 'a' && msg[FLOOR] <= 'p')
             {
+                queueCmd(cmd, 'e', 'L', msg[FLOOR]);
                 floorIdx = (msg[FLOOR] - 'a');
                 addFloorToDestinations(&elevatorInfo, floorIdx, 'c');
             }
@@ -122,9 +123,10 @@ void elevatorE_task(void *argument)
             {
                 clearFloorRequest(&elevatorInfo, elevatorInfo.currFloor);
 
-                queueCmd(cmd, 'e', 'p');
-                queueCmd(cmd, 'e', 'a');
+                queueCmd(cmd, 'e', 'p', 0);
+                queueCmd(cmd, 'e', 'a', 0);
                 osDelay(8000);
+                queueCmd(cmd, 'e', 'D', elevatorInfo.currFloor + 'a');
             }
         }
         else
@@ -140,23 +142,23 @@ void elevatorE_task(void *argument)
         {
             if (elevatorInfo.isDoorOpen)
             {
-                queueCmd(cmd, 'e', 'f');
+                queueCmd(cmd, 'e', 'f', 0);
                 elevatorInfo.isDoorOpen = false;
             }
-            queueCmd(cmd, 'e', 's');
+            queueCmd(cmd, 'e', 's', 0);
         }
         else if (elevatorInfo.direction == DOWN)
         {
             if (elevatorInfo.isDoorOpen)
             {
-                queueCmd(cmd, 'e', 'f');
+                queueCmd(cmd, 'e', 'f', 0);
                 elevatorInfo.isDoorOpen = false;
             }
-            queueCmd(cmd, 'e', 'd');
+            queueCmd(cmd, 'e', 'd', 0);
         }
         else if (elevatorInfo.direction == IDLE)
         {
-            queueCmd(cmd, 'e', 'p');
+            queueCmd(cmd, 'e', 'p', 0);
         }
     }
 }
@@ -174,9 +176,9 @@ void elevatorC_task(void *argument)
     char cmd[CMD_MAX_SIZE] = {0};
     char msg[MSG_MAX_SIZE] = {0};
 
-    queueCmd(cmd, 'c', 'r');
+    queueCmd(cmd, 'c', 'r', 0);
     osDelay(5000);
-    queueCmd(cmd, 'c', 'f');
+    queueCmd(cmd, 'c', 'f', 0);
 
     while (1)
     {
@@ -198,6 +200,7 @@ void elevatorC_task(void *argument)
             unsigned char floorIdx = 0;
             if (msg[FLOOR] >= 'a' && msg[FLOOR] <= 'p')
             {
+                queueCmd(cmd, 'c', 'L', msg[FLOOR]);
                 floorIdx = (msg[FLOOR] - 'a');
                 addFloorToDestinations(&elevatorInfo, floorIdx, 'c');
             }
@@ -211,9 +214,10 @@ void elevatorC_task(void *argument)
             {
                 clearFloorRequest(&elevatorInfo, elevatorInfo.currFloor);
 
-                queueCmd(cmd, 'c', 'p');
-                queueCmd(cmd, 'c', 'a');
+                queueCmd(cmd, 'c', 'p', 0);
+                queueCmd(cmd, 'c', 'a', 0);
                 osDelay(8000);
+                queueCmd(cmd, 'c', 'D', elevatorInfo.currFloor + 'a');
             }
         }
         else
@@ -229,23 +233,23 @@ void elevatorC_task(void *argument)
         {
             if (elevatorInfo.isDoorOpen)
             {
-                queueCmd(cmd, 'c', 'f');
+                queueCmd(cmd, 'c', 'f', 0);
                 elevatorInfo.isDoorOpen = false;
             }
-            queueCmd(cmd, 'c', 's');
+            queueCmd(cmd, 'c', 's', 0);
         }
         else if (elevatorInfo.direction == DOWN)
         {
             if (elevatorInfo.isDoorOpen)
             {
-                queueCmd(cmd, 'c', 'f');
+                queueCmd(cmd, 'c', 'f', 0);
                 elevatorInfo.isDoorOpen = false;
             }
-            queueCmd(cmd, 'c', 'd');
+            queueCmd(cmd, 'c', 'd', 0);
         }
         else if (elevatorInfo.direction == IDLE)
         {
-            queueCmd(cmd, 'c', 'p');
+            queueCmd(cmd, 'c', 'p', 0);
         }
     }
 }
@@ -263,9 +267,9 @@ void elevatorD_task(void *argument)
     char cmd[CMD_MAX_SIZE] = {0};
     char msg[MSG_MAX_SIZE] = {0};
 
-    queueCmd(cmd, 'd', 'r');
+    queueCmd(cmd, 'd', 'r', 0);
     osDelay(5000);
-    queueCmd(cmd, 'd', 'f');
+    queueCmd(cmd, 'd', 'f', 0);
 
     while (1)
     {
@@ -287,6 +291,7 @@ void elevatorD_task(void *argument)
             unsigned char floorIdx = 0;
             if (msg[FLOOR] >= 'a' && msg[FLOOR] <= 'p')
             {
+                queueCmd(cmd, 'd', 'L', msg[FLOOR]);
                 floorIdx = (msg[FLOOR] - 'a');
                 addFloorToDestinations(&elevatorInfo, floorIdx, 'c');
             }
@@ -300,9 +305,10 @@ void elevatorD_task(void *argument)
             {
                 clearFloorRequest(&elevatorInfo, elevatorInfo.currFloor);
 
-                queueCmd(cmd, 'd', 'p');
-                queueCmd(cmd, 'd', 'a');
+                queueCmd(cmd, 'd', 'p', 0);
+                queueCmd(cmd, 'd', 'a', 0);
                 osDelay(8000);
+                queueCmd(cmd, 'd', 'D', elevatorInfo.currFloor + 'a');
             }
         }
         else
@@ -318,23 +324,23 @@ void elevatorD_task(void *argument)
         {
             if (elevatorInfo.isDoorOpen)
             {
-                queueCmd(cmd, 'd', 'f');
+                queueCmd(cmd, 'd', 'f', 0);
                 elevatorInfo.isDoorOpen = false;
             }
-            queueCmd(cmd, 'd', 's');
+            queueCmd(cmd, 'd', 's', 0);
         }
         else if (elevatorInfo.direction == DOWN)
         {
             if (elevatorInfo.isDoorOpen)
             {
-                queueCmd(cmd, 'd', 'f');
+                queueCmd(cmd, 'd', 'f', 0);
                 elevatorInfo.isDoorOpen = false;
             }
-            queueCmd(cmd, 'd', 'd');
+            queueCmd(cmd, 'd', 'd', 0);
         }
         else if (elevatorInfo.direction == IDLE)
         {
-            queueCmd(cmd, 'd', 'p');
+            queueCmd(cmd, 'd', 'p', 0);
         }
     }
 }
@@ -373,7 +379,7 @@ void uartWrite_task(void *arg)
     {
         osMessageQueueGet(queueUartTx_id, msg, NULL, osWaitForever);
 
-        if (strnlen(msg, 4) < 4)
+        if (strnlen(msg, CMD_MAX_SIZE) < CMD_MAX_SIZE)
         {
             uart_sendString((const char *)msg);
         }
@@ -414,11 +420,22 @@ int main(void)
         ;
 }
 
-static void queueCmd(char *cmd, char elevator, char command)
+static void queueCmd(char *cmd, char elevator, char command, char floorLight)
 {
+    memset(cmd, 0, CMD_MAX_SIZE);
     cmd[ELEVATOR] = elevator;
     cmd[CMD]      = command;
-    cmd[CMD + 1]  = 0x0D;
+
+    if (floorLight != 0)
+    {
+        cmd[FLOOR] = floorLight;
+        cmd[FLOOR + 1] = 0X0D;
+    }
+    else
+    {
+        cmd[CMD + 1]  = 0x0D;
+    }
+
     osMessageQueuePut(queueUartTx_id, cmd, 0, 0);
 }
 
